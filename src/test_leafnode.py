@@ -17,9 +17,13 @@ class TestLeafNode(unittest.TestCase):
 
     def test_with_no_value(self):
         node = LeafNode(None)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as context:
             node.to_html()
+        self.assertEqual(str(context.exception), "LeafNode requires a value")
     
     def test_with_no_tag(self):
         node = LeafNode("This is some raw text", None, {"href": "https://www.google.com"})
         self.assertEqual(node.to_html(), "This is some raw text")
+
+if __name__ == "__main__":
+    unittest.main()
