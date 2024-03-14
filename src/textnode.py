@@ -9,5 +9,5 @@ class TextNode:
                 left.text_type == right.text_type and
                 left.url == right.url)
 
-    def repr(self):
+    def __repr__(self):
         return f"TextNode({self.text}, {self.text_type}, {self.url})"
