@@ -1,7 +1,8 @@
 import re
 from htmlnode import HTMLNode
-from leafnode import LeafNode
 from parentnode import ParentNode
+from inline_markdown import text_to_textnodes
+from textnode import text_node_to_html_node
 
 block_type_paragraph = "paragraph"
 block_type_heading = "heading"
@@ -71,33 +72,55 @@ def markdown_to_blocks(markdown: str) -> list[str]:
             stripped_blocks.append(stripped)
     return stripped_blocks
 
+def text_to_children_htmlnodes(text: str) -> list[HTMLNode]:
+    children = []
+    text_nodes = text_to_textnodes(text)
+    for text_node in text_nodes:
+        children.append(text_node_to_html_node(text_node))
+    return children
+
+
 def paragraph_block_to_htmlnode(block: str) -> HTMLNode:
-    return LeafNode(block, "p")
+    lines = block.split("\n")
+    paragraph = " ".join(lines)
+    children_nodes = text_to_children_htmlnodes(paragraph)
+    return ParentNode(children_nodes, "p")
 
 def heading_block_to_htmlnode(block: str) -> HTMLNode:
     heading_matched = re.match(r"^(#+)(.*)", block)
     heading_symbols_count = len(heading_matched.group(1))
+    if heading_symbols_count < 1 or heading_symbols_count > 6:
+        raise ValueError(f"Invalid heading level: {heading_symbols_count}")
     text = heading_matched.group(0).strip(" #")
-    return LeafNode(text, f"h{heading_symbols_count}")
+    children = text_to_children_htmlnodes(text)
+    return ParentNode(children, f"h{heading_symbols_count}")
 
 def code_block_to_htmlnode(block: str) -> HTMLNode:
-    code_node = LeafNode(block, "code")
+    code_matched = re.match(r"```([\s\S]*?)```", block)
+    if not code_matched:
+        raise ValueError("Invalid code block")
+    children = text_to_children_htmlnodes(code_matched.group(0))
+    code_node = ParentNode(children, "code")
     return ParentNode([code_node], "pre")
 
 def quote_block_to_htmlnode(block: str) -> HTMLNode:
     lines = block.splitlines()
     trimmed_lines = []
     for line in lines:
-        trimmed_lines.append(line.strip(">"))
-    quote = "\n".join(trimmed_lines)
-    return LeafNode(quote, "blockquote")
+        if not line.startswith(">"):
+            raise ValueError("Invalide quote block")
+        trimmed_lines.append(line.lstrip(">").strip())
+    quote = " ".join(trimmed_lines)
+    children = text_to_children_htmlnodes(quote)
+    return ParentNode(children, "blockquote")
 
 def unordered_list_to_htmlnode(block: str) -> HTMLNode:
     list_nodes = []
     lines = block.splitlines()
     for line in lines:
-        line = line.strip("-*")
-        list_nodes.append(LeafNode(line, "li"))
+        line = line.lstrip("-*").strip()
+        children = text_to_children_htmlnodes(line)
+        list_nodes.append(ParentNode(children, "li"))
     return ParentNode(list_nodes, "ul")
 
 def ordered_list_to_htmlnode(block: str) -> HTMLNode:
@@ -105,8 +128,9 @@ def ordered_list_to_htmlnode(block: str) -> HTMLNode:
     lines = block.splitlines()
     for i in range (0, len(lines)):
         line = lines[i]
-        line_trimmed = re.sub(f"^{i+1}.", "", line)
-        list_nodes.append(LeafNode(line_trimmed, "li"))
+        line_trimmed = re.sub(f"^{i+1}. ", "", line)
+        children = text_to_children_htmlnodes(line_trimmed)
+        list_nodes.append(ParentNode(children, "li"))
     return ParentNode(list_nodes, "ol")
 
 def markdown_to_html_node(markdown: str) -> HTMLNode:

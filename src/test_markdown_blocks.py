@@ -122,68 +122,55 @@ This is the same paragraph on a new line
         block_type = block_to_block_type(ordered_list)
         self.assertEqual(block_type, block_type_paragraph)
 
-    def test_markdown_to_htmlnode(self):
+    def test_markdown_to_htmlnode_paragraphs(self):
         markdown = """
-# This is the title
+Here is *italic* text.
+Which is part of a paragraph.
+And some **bolded** text.
 
-And here's some text
-
-*Unordered List 1
-*Unordered List 2
-
--Unordered List 3
--Unordered List 4
+And another paragraph with some `code` in it.
 """
         htmlnode = markdown_to_html_node(markdown)
-        should_be = ParentNode(
-            [
-                LeafNode("This is the title", "h1"),
-                LeafNode("And here's some text", "p"),
-                ParentNode(
-                    [
-                        LeafNode("Unordered List 1", "li"),
-                        LeafNode("Unordered List 2", "li"),
-                    ],
-                    "ul"
-                ),
-                ParentNode(
-                    [
-                        LeafNode("Unordered List 3", "li"),
-                        LeafNode("Unordered List 4", "li"),
-                    ],
-                    "ul"
-                ),
-            ],
-            "div"
+        self.assertEqual(
+            htmlnode.to_html(),
+            "<div><p>Here is <i>italic</i> text. Which is part of a paragraph. And some <b>bolded</b> text.</p><p>And another paragraph with some <code>code</code> in it.</p></div>"
         )
-        self.assertEqual(htmlnode.to_html(), should_be.to_html())
     
-    def test_markdown_to_htmlnode_ordered_list(self):
+    def test_markdown_to_htmlnode_lists_headings(self):
         markdown = """
-1.Ordered List 1
-2.Ordered List 2
-3.Ordered List 3
+### Heading 3
 
->Here is a quote
->over multiple lines
+* List item 1
+* List item 2
+* **Bold** list item
 
+1. *Italic* list item
+2. `Code` list item
+
+# Heading 1
 """
         htmlnode = markdown_to_html_node(markdown)
-        should_be = ParentNode(
-            [
-                ParentNode(
-                    [
-                        LeafNode("Ordered List 1", "li"),
-                        LeafNode("Ordered List 2", "li"),
-                        LeafNode("Ordered List 3", "li"),
-                    ],
-                    "ol"
-                ),
-                LeafNode("Here is a quote\nover multiple lines", "blockquote")
-            ],
-            "div"
+        self.assertEqual(
+            htmlnode.to_html(),
+            "<div><h3>Heading 3</h3><ul><li>List item 1</li><li>List item 2</li><li><b>Bold</b> list item</li></ul><ol><li><i>Italic</i> list item</li><li><code>Code</code> list item</li></ol><h1>Heading 1</h1></div>"
         )
-        self.assertEqual(htmlnode.to_html(), should_be.to_html())
+        
+    def test_markdown_to_htmlnode_quote(self):
+        markdown = """
+###### Heading 6
+
+> I am quoting something here.
+> It is over multiple
+> lines.
+
+Now **that** was a quote!
+"""
+        htmlnode = markdown_to_html_node(markdown)
+        print(htmlnode)
+        self.assertEqual(
+            htmlnode.to_html(),
+            "<div><h6>Heading 6</h6><blockquote>I am quoting something here. It is over multiple lines.</blockquote><p>Now <b>that</b> was a quote!</p></div>"
+        )
 
 if __name__ == "__main__":
     unittest.main()
